@@ -1,10 +1,11 @@
 
 
 from abc import ABC
+from dataclasses import dataclass
 from datetime import datetime
 
-
-class Channel(ABC):
+@dataclass
+class Channel:
 
     id: str
 

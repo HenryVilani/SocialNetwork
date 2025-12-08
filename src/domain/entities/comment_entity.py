@@ -1,9 +1,9 @@
 
-from abc import ABC
+from dataclasses import dataclass
 from datetime import datetime
 
-
-class Comment(ABC):
+@dataclass
+class Comment:
 
     id: str
     user_id: str
