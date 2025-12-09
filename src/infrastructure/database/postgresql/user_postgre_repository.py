@@ -114,7 +114,7 @@ class UserPostgreRepository(IUserRepository):
             )
 
     @breaker
-    def find_all_by_username(self, name: str, length: int, segment: int) -> SegmentUserRepoOutDTO:
+    def find_all_by_username(self, username: str, length: int, segment: int) -> SegmentUserRepoOutDTO:
 
         with self.connection.session_factory() as session:
             session: Session
@@ -123,7 +123,7 @@ class UserPostgreRepository(IUserRepository):
 
             entities = (
                 session.query(UserModel)
-                .filter(UserModel.username.ilike(f"%{name}%"))
+                .filter(UserModel.username.ilike(f"%{username}%"))
                 .offset(offset)
                 .limit(max(length, 1) + 1)
                 .all()
