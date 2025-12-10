@@ -1,0 +1,962 @@
+openapi: 3.1.0
+servers:
+  - url: http://localhost:8080
+info:
+  title: Social Network API
+  description: A robust social network REST API built with Python, Django, and PostgreSQL, following Clean Architecture principles and Domain-Driven Design patterns.
+  version: 1.0.0
+
+security:
+  - BearerAuth: []
+
+paths:
+  /v1/login:
+    post:
+      summary: Login user
+      description: Authenticate user with email and password. Returns a JWT token if credentials are correct.
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        description: User credentials for authentication
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: dummy@gmail.com
+                password:
+                  type: string
+                  format: password
+                  example: passwd123
+      responses:
+        "200":
+          description: Successfully authenticated. Returns JWT token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        "400":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/WrongCredentialsError"
+                  - $ref: "#/components/schemas/BodyParserError"
+                  - $ref: "#/components/schemas/EmailInvalidError"
+                  - $ref: "#/components/schemas/InternalError"
+
+  /v1/register:
+    post:
+      summary: Register new user
+      description: Create a new user account with username, email, and password.
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        description: User information for registration
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 5
+                  maxLength: 25
+                  example: dummy123
+                  description: Username must be 5-25 characters, only letters, digits, dots, and hyphens
+                email:
+                  type: string
+                  format: email
+                  example: dummy@gmail.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 25
+                  example: passwd123
+                  description: Password must be 8-25 characters
+      responses:
+        "200":
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: a1b2c3d4e5f6
+                  username:
+                    type: string
+                    example: dummy123
+                  email:
+                    type: string
+                    example: dummy@gmail.com
+                  role:
+                    type: string
+                    enum: [user, admin]
+                    example: user
+        "400":
+          description: Registration failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/UserAlreadyExistsError"
+                  - $ref: "#/components/schemas/UsernameInvalidError"
+                  - $ref: "#/components/schemas/EmailInvalidError"
+                  - $ref: "#/components/schemas/PasswordInvalidError"
+                  - $ref: "#/components/schemas/BodyParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+  /v1/account:
+    get:
+      summary: Get current user or search users
+      description: Get authenticated user's profile or search users by username query parameter
+      tags:
+        - Account
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Username search query. If provided, searches for users instead of returning current user.
+        - name: length
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results to return (used with query parameter)
+        - name: segment
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Pagination segment/page number (used with query parameter)
+      responses:
+        "200":
+          description: User profile or search results
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/UserProfile"
+                  - $ref: "#/components/schemas/UserSearchResults"
+        "400":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/UserNotFoundError"
+                  - $ref: "#/components/schemas/ParamParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    put:
+      summary: Update user profile
+      description: Update the authenticated user's username
+      tags:
+        - Account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+              properties:
+                username:
+                  type: string
+                  minLength: 5
+                  maxLength: 25
+                  example: newusername123
+      responses:
+        "200":
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          description: Update failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/UsernameInvalidError"
+                  - $ref: "#/components/schemas/BodyParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    delete:
+      summary: Delete user account
+      description: Delete the authenticated user's account and all associated data (posts, comments, channels)
+      tags:
+        - Account
+      responses:
+        "200":
+          description: Account deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        "400":
+          description: Deletion failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/InternalError"
+
+  /v1/posts:
+    get:
+      summary: Search posts
+      description: Search posts by title with pagination support
+      tags:
+        - Posts
+      security: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Title search query
+        - name: length
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results to return
+        - name: segment
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Pagination segment/page number
+      responses:
+        "200":
+          description: List of posts matching the search query
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Post"
+                  next_segment:
+                    type: [integer, "null"]
+                    description: Next page number, null if no more pages
+        "400":
+          description: Search failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ParamParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    post:
+      summary: Create new post
+      description: Create a new post with title, content, and optional tags and channel
+      tags:
+        - Posts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+                - tags
+              properties:
+                title:
+                  type: string
+                  example: My First Post
+                content:
+                  type: string
+                  example: This is the content of my post
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: [technology, python, django]
+                channel_id:
+                  type: [string, "null"]
+                  example: abc123def456
+      responses:
+        "200":
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostWithChannel"
+        "400":
+          description: Post creation failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/BodyParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+  /v1/posts/{post_id}:
+    get:
+      summary: Get post by ID
+      description: Retrieve a specific post by its identifier
+      tags:
+        - Posts
+      security: []
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post identifier
+      responses:
+        "200":
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PostNotFoundError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    delete:
+      summary: Delete post
+      description: Delete a post. Only the post author can delete their post.
+      tags:
+        - Posts
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post identifier
+      responses:
+        "200":
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        "400":
+          description: Deletion failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/PostNotFoundError"
+                  - $ref: "#/components/schemas/UnauthorizedActionError"
+                  - $ref: "#/components/schemas/InternalError"
+
+  /v1/channels:
+    get:
+      summary: Search channels
+      description: Search channels by name with pagination support
+      tags:
+        - Channels
+      security: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Channel name search query
+        - name: length
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results to return
+        - name: segment
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Pagination segment/page number
+      responses:
+        "200":
+          description: List of channels matching the search query
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channels:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Channel"
+                  next_segment:
+                    type: [integer, "null"]
+        "400":
+          description: Search failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ParamParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    post:
+      summary: Create new channel
+      description: Create a new content channel
+      tags:
+        - Channels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  example: Technology News
+                description:
+                  type: string
+                  example: Latest updates in technology
+      responses:
+        "200":
+          description: Channel created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+        "400":
+          description: Channel creation failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/ChannelNameAlreadyExistsError"
+                  - $ref: "#/components/schemas/BodyParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+  /v1/channels/{channel_id}:
+    get:
+      summary: Get channel by ID
+      description: Retrieve a specific channel by its identifier
+      tags:
+        - Channels
+      security: []
+      parameters:
+        - name: channel_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Channel identifier
+      responses:
+        "200":
+          description: Channel details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+        "400":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ChannelNotFoundError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    delete:
+      summary: Delete channel
+      description: Delete a channel. Only the channel owner can delete it.
+      tags:
+        - Channels
+      parameters:
+        - name: channel_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Channel identifier
+      responses:
+        "200":
+          description: Channel deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        "400":
+          description: Deletion failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/ChannelNotFoundError"
+                  - $ref: "#/components/schemas/UnauthorizedActionError"
+                  - $ref: "#/components/schemas/InternalError"
+
+  /v1/comments/{id}:
+    get:
+      summary: List comments by post
+      description: Retrieve comments for a specific post with pagination. The {id} parameter is the post_id.
+      tags:
+        - Comments
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post identifier to list comments from
+        - name: length
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results to return
+        - name: segment
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Pagination segment/page number
+      responses:
+        "200":
+          description: List of comments for the post
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Comment"
+                  next_segment:
+                    type: [integer, "null"]
+        "400":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PostNotFoundError"
+                  - $ref: "#/components/schemas/ParamParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    post:
+      summary: Create comment on post
+      description: Add a comment to a specific post. The {id} parameter is the post_id.
+      tags:
+        - Comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post identifier to comment on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  example: Great post! Thanks for sharing.
+      responses:
+        "200":
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: comment123
+                  content:
+                    type: string
+                    example: Great post! Thanks for sharing.
+        "400":
+          description: Comment creation failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/PostNotFoundError"
+                  - $ref: "#/components/schemas/UserNotFoundError"
+                  - $ref: "#/components/schemas/BodyParserError"
+                  - $ref: "#/components/schemas/InternalError"
+
+    delete:
+      summary: Delete comment
+      description: Delete a comment. The {id} parameter is the comment_id. Only the comment author can delete it.
+      tags:
+        - Comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Comment identifier to delete
+      responses:
+        "200":
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        "400":
+          description: Deletion failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NeedAuthenticationError"
+                  - $ref: "#/components/schemas/CommentNotFoundError"
+                  - $ref: "#/components/schemas/UserNotFoundError"
+                  - $ref: "#/components/schemas/InternalError"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /v1/login endpoint
+
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          example: a1b2c3d4e5f6
+        username:
+          type: string
+          example: dummy123
+        email:
+          type: string
+          example: dummy@gmail.com
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+
+    UserSearchResults:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserProfile"
+        next_segment:
+          type: [integer, "null"]
+          description: Next page number, null if no more pages
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          example: post123abc
+        title:
+          type: string
+          example: Introduction to Clean Architecture
+        content:
+          type: string
+          example: Clean Architecture is a software design philosophy...
+        tags:
+          type: array
+          items:
+            type: string
+          example: [architecture, software, design]
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-12-10T14:30:00Z"
+
+    PostWithChannel:
+      allOf:
+        - $ref: "#/components/schemas/Post"
+        - type: object
+          properties:
+            channel_id:
+              type: [string, "null"]
+              example: channel456def
+    Channel:
+      type: object
+      properties:
+        id:
+          type: string
+          example: channel123
+        name:
+          type: string
+          example: Technology News
+        description:
+          type: string
+          example: Latest updates in technology
+        posts:
+          type: integer
+          example: 42
+          description: Number of posts in the channel
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-12-10T14:30:00Z"
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          example: comment789
+        user_id:
+          type: string
+          example: user123
+        post_id:
+          type: string
+          example: post456
+        content:
+          type: string
+          example: Great post! Thanks for sharing.
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-12-10T14:30:00Z"
+
+    # Error Schemas
+    PayloadParserError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: payload_parser_error
+      required:
+        - status
+
+    WrongCredentialsError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: wrong_credentials_error
+      required:
+        - status
+
+    NeedAuthenticationError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: need_authentication
+      required:
+        - status
+
+    InternalError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: internal_error
+      required:
+        - status
+
+    UnauthorizedActionError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: unauthorized_action
+      required:
+        - status
+
+    UserAlreadyExistsError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: user_already_exists
+      required:
+        - status
+
+    UserNotFoundError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: user_not_found
+      required:
+        - status
+
+    UsernameInvalidError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: username_invalid
+      required:
+        - status
+
+    EmailInvalidError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: email_invalid
+      required:
+        - status
+
+    PasswordInvalidError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: password_invalid
+      required:
+        - status
+
+    BodyParserError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: body_parser_error
+      required:
+        - status
+
+    MethodError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: method_error
+      required:
+        - status
+
+    ParamParserError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: param_parser_error
+      required:
+        - status
+
+    ValueParserError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: value_parser_error
+      required:
+        - status
+
+    PostNotFoundError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: post_not_found
+      required:
+        - status
+
+    ChannelNotFoundError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: channel_not_found
+      required:
+        - status
+
+    ChannelNameAlreadyExistsError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: channel_name_already_exists
+      required:
+        - status
+
+    CommentNotFoundError:
+      type: object
+      properties:
+        status:
+          type: string
+          const: comment_not_found
+      required:
+        - status
