@@ -3,6 +3,7 @@ from abc import ABC
 from typing import List, Optional
 
 from src.application.dtos.post_repo_dto import CreatePostRepoInDTO, SegmentPostRepoOutDTO
+from src.domain.entities.channel_entity import Channel
 from src.domain.entities.post_entity import Post
 
 
@@ -83,4 +84,28 @@ class IPostRepository(ABC):
         """
         ...
 
-
+    def find_all_by_channel(self, channel_id: str, length: int, segment: int) -> SegmentPostRepoOutDTO:
+        """
+        Retrieve posts associated with a specific channel_id with pagination support.
+        
+        :param channel_id: Channel id to which posts are associated.
+        :type channel_id: str
+        :param length: Maximum number of items to return.
+        :type length: int
+        :param segment: Pagination segment (offset).
+        :type segment: int
+        :return: Result set containing posts and pagination metadata.
+        :rtype: SegmentPostRepoOutDTO
+        """
+        ...
+        
+    def count_by_channel(self, channel_id: str) -> int: 
+        """
+        Retrieve a number of posts associated with a channel.
+        
+        :param channel_id: Channel id to which posts are associated.
+        :type channel_id: str
+        :return: Number of posts associated with a channel.
+        :rtype: int
+        """
+        ...
