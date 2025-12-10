@@ -110,12 +110,20 @@ def get_search_post_use_case():
 def get_create_channel_use_case():
     
     channel_repository = get_channel_repository()
-    return CreateChannelUseCase(channel_repository)
+    post_repository = get_post_repository()
+    return CreateChannelUseCase(
+        post_repository=post_repository,
+        channel_repository=channel_repository
+    )
 
 def get_search_channel_use_case():
     
     channel_repository = get_channel_repository()
-    return SearchChannelUseCase(channel_repository)
+    post_repository = get_post_repository()
+    return SearchChannelUseCase(
+        post_repository=post_repository,
+        channel_repository=channel_repository
+    )
 
 def get_delete_channel_use_case():
     
