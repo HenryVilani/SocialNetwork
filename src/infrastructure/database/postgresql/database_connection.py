@@ -14,8 +14,9 @@ class DatabaseConnection:
     def __init__(self):
         self._engine = create_engine(
             os.getenv("DATABASE_URL"),
-            pool_pre_ping=True
-        )
+            pool_pre_ping=True,
+            echo=False
+        ).execution_options(autocommit=False)
         self._session_factory = sessionmaker(
             bind=self._engine,
             autoflush=False

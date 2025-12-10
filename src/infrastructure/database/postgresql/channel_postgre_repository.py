@@ -13,7 +13,7 @@ class ChannelPostgreRepository(IChannelRepository):
 
     def __init__(self, connection: DatabaseConnection):
         self.connection = connection
-        self.connection.create_all_tables()
+        
 
     @breaker
     def create(self, channel: CreateChannelRepoInDTO):
@@ -22,7 +22,7 @@ class ChannelPostgreRepository(IChannelRepository):
             session: Session
 
             entity = ChannelModel(
-                id=uuid4(),
+                id=uuid4().hex,
                 user_id=channel.user_id,
                 name=channel.name,
                 description=channel.description

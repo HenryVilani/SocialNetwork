@@ -14,7 +14,7 @@ class CommentPostgreRepository(ICommentRepository):
 
     def __init__(self, connection: DatabaseConnection):
         self.connection = connection
-        self.connection.create_all_tables()
+        
 
     @breaker
     def create(self, comment: CreateCommentRepoInDTO):
@@ -23,7 +23,7 @@ class CommentPostgreRepository(ICommentRepository):
             session: Session
 
             entity = CommentModel(
-                id=uuid4(),
+                id=uuid4().hex,
                 user_id=comment.user_id,
                 post_id=comment.post_id,
                 content=comment.content

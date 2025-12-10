@@ -18,8 +18,6 @@ class UserPostgreRepository(IUserRepository):
     def __init__(self, connection: DatabaseConnection):
         self.connection = connection
 
-        self.connection.create_all_tables()
-
     @breaker
     def create(self, user: CreateUserRepoInDTO) -> User:
         
@@ -30,7 +28,7 @@ class UserPostgreRepository(IUserRepository):
             if session.execute(stmt).scalar(): raise UserAlreadyExists
 
             entity = UserModel(
-                id=uuid4(),
+                id=uuid4().hex,
                 username=user.username.value,
                 email=user.email.value,
                 role=user.role.value,

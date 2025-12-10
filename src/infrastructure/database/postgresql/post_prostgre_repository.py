@@ -7,13 +7,14 @@ from src.domain.entities.post_entity import Post
 from src.domain.repositories.post_repository import IPostRepository
 from src.infrastructure.database.postgresql.breaker_connection import breaker
 from src.infrastructure.database.postgresql.database_connection import DatabaseConnection
+from src.infrastructure.database.postgresql.models.channel_model import ChannelModel
 from src.infrastructure.database.postgresql.models.post_model import PostModel
 
 class PostPostgreRepository(IPostRepository):
 
     def __init__(self, connection: DatabaseConnection):
         self.connection = connection
-        self.connection.create_all_tables()
+        
 
     @breaker
     def create(self, entity: CreatePostRepoInDTO) -> Post:
@@ -22,7 +23,7 @@ class PostPostgreRepository(IPostRepository):
             session: Session
 
             entity = PostModel(
-                id=uuid4(),
+                id=uuid4().hex,
                 user_id=str(entity.user_id),
                 channel_id=entity.channel_id,
                 title=entity.title,
@@ -67,7 +68,6 @@ class PostPostgreRepository(IPostRepository):
                 session.delete(entity)
             session.commit()
         
-
     @breaker
     def find_by_id(self, id: str) -> Post | None:
 
@@ -157,4 +157,47 @@ class PostPostgreRepository(IPostRepository):
                 next_segment=(max(segment, 1) + 1) if has_next else None,
             )
 
+    @breaker
+    def find_by_channel(self, channel_id: str, length: int, segment: int) -> SegmentPostRepoOutDTO:
+        
+        with self.connection.session_factory() as session:
+            session: Session
+            
+            offset = (max(segment, 1) - 1) * max(length, 1)
 
+            entities = (
+                session.query(PostModel)
+                .filter(PostModel.channel_id == channel_id)
+                .offset(offset)
+                .limit(max(length, 1) + 1)
+                .all()
+            )
+
+            has_next = len(entities) > length
+            posts = entities[:length]
+
+            return SegmentPostRepoOutDTO(
+                posts=[
+                    Post(
+                        id=str(entity.id),
+                        title=entity.title,
+                        content=entity.content,
+                        user_id=str(entity.user_id),
+                        channel_id=entity.channel_id,
+                        tags=entity.tags,
+                        created_at=entity.created_at
+                    )
+                    for entity in posts
+                ],
+                next_segment=(max(segment, 1) + 1) if has_next else None,
+            )
+        
+    @breaker
+    def count_by_channel(self, channel_id: str) -> int:
+        with self.connection.session_factory() as session:
+            session: Session
+            
+            return session.query(PostModel).filter(PostModel.channel_id == channel_id).count()
+        
+        
+        
