@@ -3,7 +3,12 @@ from django.urls import path
 from src.presentation.v1.http import auth_controller, channel_controller, comment_controller, post_controller
 from src.presentation.v1.http import account_controller
 
+from django_scalar import views as scalar_views
+
 urlpatterns = [
+    
+    path('v1/docs/', scalar_views.scalar_viewer, {"openapi_url":"/static/openapi.yaml"}),
+    
     path('v1/login', auth_controller.login_user),
     path('v1/register', auth_controller.register_user),
 
