@@ -35,7 +35,7 @@ INSTALLED_APPS = []
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'src.infrastructure.http.middlewares.errors_middleware.ErrorHandlingMiddleware'
+    'src.infrastructure.http.middlewares.errors_middleware.ErrorHandlingMiddleware'
 ]
 
 ROOT_URLCONF = 'src.presentation.v1.http.urls'

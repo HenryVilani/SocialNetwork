@@ -13,8 +13,6 @@ class ErrorHandlingMiddleware:
 
     def process_exception(self, request: HttpRequest, exception: Exception) -> HttpResponse | None:
 
-        print(exception)
-
         if isinstance(exception, BaseError):
             exception: BaseError
             return JsonResponse(
