@@ -1,17 +1,18 @@
 
 from datetime import datetime
-from sqlalchemy import UUID, Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime
 from .base_model import Base
 
 
 class CommentModel(Base):
 
     __tablename__ = "comments"
+    __table_args__ = {'schema': 'public'}
 
-    id: UUID = Column(UUID, primary_key=True)
+    id: str = Column(String, primary_key=True)
 
-    user_id: UUID = Column(UUID, ForeignKey("users.id"), nullable=False)
-    post_id: UUID = Column(UUID, ForeignKey("posts.id"), nullable=False)
+    user_id: str = Column(String, ForeignKey("public.users.id"), nullable=False)
+    post_id: str = Column(String, ForeignKey("public.posts.id"), nullable=False)
 
     content: str = Column(String, nullable=False)
 

@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy import UUID, Column, ForeignKey, String, Integer, DateTime
+from sqlalchemy import Column, ForeignKey, String, Integer, DateTime
 
 from src.infrastructure.database.postgresql.models.base_model import Base
 
@@ -8,9 +8,10 @@ from src.infrastructure.database.postgresql.models.base_model import Base
 class ChannelModel(Base):
     
     __tablename__ = "channels"
+    __table_args__ = {'schema': 'public'}
 
-    id: UUID = Column(UUID, primary_key=True)
-    user_id: UUID = Column(UUID, ForeignKey("users.id"))
+    id: str = Column(String, primary_key=True)
+    user_id: str = Column(String, ForeignKey("public.users.id"))
     name: str = Column(String, nullable=False)
     description: str = Column(String, nullable=False)
     posts: int = Column(Integer, nullable=False, default=0)
