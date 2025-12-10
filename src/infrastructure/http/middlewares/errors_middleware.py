@@ -1,8 +1,8 @@
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.utils.deprecation import MiddlewareMixin
 
-from src.application.dtos.comment_repo_dto import ErrorOutDTO
+
+from src.application.dtos.common_dto import ErrorControllerOutDTO
 from src.application.errors.base_errors import BaseError
 from src.application.errors.common_errors import InternalError
 
@@ -16,7 +16,7 @@ class ErrorHandlingMiddleware:
         if isinstance(exception, BaseError):
             exception: BaseError
             return JsonResponse(
-                ErrorOutDTO(
+                ErrorControllerOutDTO(
                     status=exception.message
                 ).model_dump(),
                 status=400
@@ -24,7 +24,7 @@ class ErrorHandlingMiddleware:
 
         else:
             return JsonResponse(
-                ErrorOutDTO(
+                ErrorControllerOutDTO(
                     status=InternalError().message
                 ).model_dump(),
                 status=400
