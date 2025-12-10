@@ -1,14 +1,13 @@
 
+from dataclasses import dataclass
 from datetime import datetime
 from re import S
 from typing import List, Optional
-from pydantic import BaseModel
 
 from src.domain.entities.channel_entity import Channel
 
-
-
-class CreateChannelUseCaseDTO(BaseModel):
+@dataclass
+class CreateChannelUseCaseDTO:
     
     id: str
     
@@ -19,7 +18,8 @@ class CreateChannelUseCaseDTO(BaseModel):
     
     created_at: datetime
 
-class GetChannelUseCaseDTO(BaseModel):
+@dataclass
+class GetChannelUseCaseDTO:
     
     id: str
     
@@ -30,7 +30,8 @@ class GetChannelUseCaseDTO(BaseModel):
     
     created_at: datetime
 
-class SearchChannelUseCaseDTO(BaseModel):
+@dataclass
+class SearchChannelUseCaseDTO:
     
     channels: List[Channel]
     next_segment: Optional[int]

@@ -1,17 +1,19 @@
 
 
+from dataclasses import dataclass
 from typing import List, Optional
-from pydantic import BaseModel
 
 from src.domain.entities.post_entity import Post
 
-class SearchPostUseCaseOutDTO(BaseModel):
+@dataclass
+class SearchPostUseCaseOutDTO:
     
     posts: List[Post]
     next_segment: Optional[int]
 
 
-class GetPostByUserUseCaseOutDTO(BaseModel):
+@dataclass
+class GetPostByUserUseCaseOutDTO:
     posts: List[Post]
     next_segment: Optional[int]
     

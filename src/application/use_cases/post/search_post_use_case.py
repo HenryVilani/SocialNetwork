@@ -1,5 +1,5 @@
 from attrs import define
-from src.application.dtos.post_use_case_dto import SearchPostItemDTO, SearchPostUseCaseOutDTO
+from src.application.dtos.post_use_case_dto import SearchPostUseCaseOutDTO
 from src.domain.repositories.post_repository import IPostRepository
 
 
