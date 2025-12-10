@@ -34,15 +34,6 @@ class SearchPostUseCase:
         posts_segment = self.post_repository.find_all_by_title(title, length, segment)
 
         return SearchPostUseCaseOutDTO(
-            posts=[
-                SearchPostItemDTO(
-                    user_id=post.user_id,
-                    content=post.content,
-                    channel_id=post.channel_id,
-                    title=post.title,
-                    tags=post.tags,
-                )
-                for post in posts_segment.posts
-            ],
+            posts=posts_segment.posts,
             next_segment=posts_segment.next_segment
         )
