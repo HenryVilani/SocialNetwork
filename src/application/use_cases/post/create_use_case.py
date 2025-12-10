@@ -9,6 +9,12 @@ from src.domain.repositories.post_repository import IPostRepository
 
 @define
 class CreatePostUseCase:
+    """
+    Application use case for creating a new post.
+
+    :param post_repository: Repository abstraction for post persistence.
+    :type post_repository: IPostRepository
+    """
 
     post_repository: IPostRepository
 
@@ -19,6 +25,23 @@ class CreatePostUseCase:
         tags: List[str],
         channel_id: Optional[str]
     ) -> Post:
+        """
+        Execute the post creation and return post created.
+
+        :param user_id: Identifier of the post author.
+        :type user_id: str
+        :param title: Title of the post.
+        :type title: str
+        :param content: Content of the post.
+        :type content: str
+        :param tags: List of tags associated with the post.
+        :type tags: List[str]
+        :param channel_id: Optional channel identifier where the post 
+            will be published.
+        :type channel_id: Optional[str]
+        :return: Post entity created.
+        :rtype: Post
+        """
         
         post = self.post_repository.create(
             CreatePostRepoInDTO(
