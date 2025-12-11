@@ -44,3 +44,6 @@ Circuit breaker pattern for database resilience
 Pagination support for list endpoints
 Comprehensive error handling
 
+## Documentation
+
+Access: https://localhost:8000/v1/docs
